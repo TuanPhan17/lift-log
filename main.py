@@ -1,78 +1,87 @@
-import argparse
 import json
-import os
-import datetime
+from datetime import date
+from pathlib import Path
 
-DB_PATH = os.path.join("data", "lifts.json")
+DATA_FILE = Path("lift_log.json")
 
-def _ensure_db():
-    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-    if not os.path.exists(DB_PATH):
-        with open(DB_PATH, "w") as f:
-            json.dump([], f)
-
-def _load():
-    _ensure_db()
-    with open(DB_PATH, "r") as f:
+def load_log():
+    if DATA_FILE.exists():
         try:
-            return json.load(f)
-        except ValueError:
-            return []
+            with open(DATA_FILE, "r") as f:
+                return json.load(f)
+        except json.JSONDecodeError:
+            print("⚠️ Corrupt log file—starting fresh.")
+    return []
 
-def _save(rows):
-    with open(DB_PATH, "w") as f:
-        json.dump(rows, f, indent=2)
+def save_log(log):
+    with open(DATA_FILE, "w") as f:
+        json.dump(log, f, indent=2)
 
-def cmd_add(args):
-    rows = _load()
+def add_lift(log, exercise, weight, reps, sets, note=""):
     entry = {
-        "date": args.date or datetime.date.today().isoformat(),
-        "exercise": args.exercise.strip(),
-        "sets": int(args.sets),
-        "reps": [int(x) for x in args.reps.split(",")] if args.reps else [],
-        "weight": [float(x) for x in args.weight.split(",")] if args.weight else [],
-        "notes": args.notes or ""
+        "date": str(date.today()),
+        "exercise": exercise.strip(),
+        "weight": int(weight),
+        "reps": int(reps),
+        "sets": int(sets),
+        "note": note.strip(),
     }
-    rows.append(entry)
-    _save(rows)
-    print("added: {} - {}".format(entry["date"], entry["exercise"]))
+    log.append(entry)
+    save_log(log)
+    print(f"✅ Added: {exercise} — {weight} lbs x {reps} reps x {sets} sets")
 
-def cmd_list(args):
-    rows = _load()
-    if not rows:
-        print("no entries yet.")
+def list_lifts(log):
+    if not log:
+        print("No lifts yet. Add one!")
         return
-    for r in rows:
-        print("[{}] {} sets:{} reps:{} weight:{} notes:{}".format(
-            r.get("date",""), r.get("exercise",""), r.get("sets",""),
-            r.get("reps",""), r.get("weight",""), r.get("notes","")
-        ))
+    for i, lift in enumerate(log, 1):
+        note = f" | {lift['note']}" if lift.get("note") else ""
+        print(f"{i}. [{lift['date']}] {lift['exercise']} — {lift['weight']} lbs x {lift['reps']} x {lift['sets']}{note}")
 
-def build_parser():
-    p = argparse.ArgumentParser(description="Lift Log CLI")
-    sub = p.add_subparsers(dest="cmd")
+def delete_lift(log, index):
+    i = index - 1
+    if 0 <= i < len(log):
+        removed = log.pop(i)
+        save_log(log)
+        print(f"🗑️ Deleted: {removed['exercise']} from {removed['date']}")
+    else:
+        print("Invalid index.")
 
-    add = sub.add_parser("add", help="add a lift")
-    add.add_argument("--exercise", required=True)
-    add.add_argument("--sets", required=True, type=int)
-    add.add_argument("--reps")
-    add.add_argument("--weight")
-    add.add_argument("--date")
-    add.add_argument("--notes")
-    add.set_defaults(func=cmd_add)
-
-    ls = sub.add_parser("list", help="list lifts")
-    ls.set_defaults(func=cmd_list)
-
-    return p
+def prompt_int(msg):
+    while True:
+        val = input(msg).strip()
+        if val.isdigit():
+            return int(val)
+        print("Enter a number.")
 
 def main():
-    parser = build_parser()
-    args = parser.parse_args()
-    if not getattr(args, "func", None):
-        parser.print_help()
-        return
-    args.func(args)
+    log = load_log()
+    while True:
+        print("\n1) Add lift  2) Show log  3) Delete  4) Quit")
+        choice = input("Choose: ").strip()
+
+        if choice == "1":
+            exercise = input("Exercise: ")
+            weight = prompt_int("Weight (lbs): ")
+            reps   = prompt_int("Reps: ")
+            sets   = prompt_int("Sets: ")
+            note   = input("Note (optional): ")
+            add_lift(log, exercise, weight, reps, sets, note)
+
+        elif choice == "2":
+            list_lifts(log)
+
+        elif choice == "3":
+            list_lifts(log)
+            if log:
+                idx = prompt_int("Delete which #? ")
+                delete_lift(log, idx)
+
+        elif choice == "4":
+            print("Saved. Bye!")
+            break
+        else:
+            print("Invalid choice.")
 
 if __name__ == "__main__":
     main()
