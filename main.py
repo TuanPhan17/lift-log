@@ -57,7 +57,7 @@ def prompt_int(msg):
 def main():
     log = load_log()
     while True:
-        print("\n1) Add lift  2) Show log  3) Delete  4) Quit")
+        print("\n1) Add lift  2) Show log  3) Delete  4) Today  5) Quit")
         choice = input("Choose: ").strip()
 
         if choice == "1":
@@ -78,10 +78,42 @@ def main():
                 delete_lift(log, idx)
 
         elif choice == "4":
+            day = today_str()
+            list_lifts_for(log, day)
+            stats_for(log, day)
+
+        elif choice == "5":
             print("Saved. Bye!")
             break
+
         else:
             print("Invalid choice.")
+
+
+from datetime import date
+
+def today_str():
+    return str(date.today())
+
+def list_lifts_for(log, day):
+    items = [l for l in log if l.get("date") == day]
+    if not items:
+        print(f"No lifts for {day}.")
+        return
+    for i, lift in enumerate(items, 1):
+        note = f" | {lift['note']}" if lift.get("note") else ""
+        print(f"{i}. [{lift['date']}] {lift['exercise']} — {lift['weight']} lbs x {lift['reps']} x {lift['sets']}{note}")
+
+def stats_for(log, day):
+    items = [l for l in log if l.get("date") == day]
+    total_sets = sum(l["sets"] for l in items)
+    total_reps = sum(l["reps"] * l["sets"] for l in items)
+    total_volume = sum(l["weight"] * l["reps"] * l["sets"] for l in items)
+    print(f"\nStats for {day}:")
+    print(f"- Total sets:   {total_sets}")
+    print(f"- Total reps:   {total_reps}")
+    print(f"- Total volume: {total_volume} lb-reps")
+
 
 if __name__ == "__main__":
     main()
