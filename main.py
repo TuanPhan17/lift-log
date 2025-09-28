@@ -57,9 +57,9 @@ def prompt_int(msg):
 def main():
     log = load_log()
     while True:
-        print("\n1) Add lift  2) Show log  3) Delete  4) Today  5) Quit")
+        print("\n1) Add lift  2) Show log  3) Delete  4) Today  5) PR  6) Quit")
         choice = input("Choose: ").strip()
-
+        
         if choice == "1":
             exercise = input("Exercise: ")
             weight = prompt_int("Weight (lbs): ")
@@ -67,25 +67,23 @@ def main():
             sets   = prompt_int("Sets: ")
             note   = input("Note (optional): ")
             add_lift(log, exercise, weight, reps, sets, note)
-
         elif choice == "2":
             list_lifts(log)
-
         elif choice == "3":
             list_lifts(log)
             if log:
                 idx = prompt_int("Delete which #? ")
                 delete_lift(log, idx)
-
         elif choice == "4":
             day = today_str()
             list_lifts_for(log, day)
             stats_for(log, day)
-
         elif choice == "5":
+            name = input("Exercise name for PR: ")
+            pr_by_exercise(log, name)
+        elif choice == "6":
             print("Saved. Bye!")
             break
-
         else:
             print("Invalid choice.")
 
@@ -113,6 +111,17 @@ def stats_for(log, day):
     print(f"- Total sets:   {total_sets}")
     print(f"- Total reps:   {total_reps}")
     print(f"- Total volume: {total_volume} lb-reps")
+
+def pr_by_exercise(log, exercise_name):
+    ex = exercise_name.strip().lower()
+    lifts = [l for l in log if l["exercise"].strip().lower() == ex]
+    if not lifts:
+        print(f"No entries for '{exercise_name}'.")
+        return
+    # Best by weight; if tie, pick higher total reps*sets
+    best = max(lifts, key=lambda l: (l["weight"], l["reps"] * l["sets"]))
+    print(f"🏆 PR for {exercise_name}: {best['weight']} lbs — {best['reps']} x {best['sets']} on {best['date']}")
+
 
 
 if __name__ == "__main__":
