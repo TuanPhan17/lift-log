@@ -2,3 +2,7 @@
 __pycache__/
 *.pyc
 data/lifts.json
+__pycache__/
+*.pyc
+.venv/
+.env
