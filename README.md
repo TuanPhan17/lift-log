@@ -1,3 +1,9 @@
 # Lift Log
-Add and list your lifts from the terminal.
-# lift-log
+
+A simple CLI app to track workouts from the terminal.
+
+## Usage
+```bash
+python main.py
+
+
