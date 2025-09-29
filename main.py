@@ -35,8 +35,9 @@ def list_lifts(log):
         print("No lifts yet. Add one!")
         return
     for i, lift in enumerate(log, 1):
+        box = "x" if lift.get("completed") else " "
         note = f" | {lift['note']}" if lift.get("note") else ""
-        print(f"{i}. [{lift['date']}] {lift['exercise']} — {lift['weight']} lbs x {lift['reps']} x {lift['sets']}{note}")
+        print(f"{i}. [{box}] {lift['date']} {lift['exercise']} – {lift['weight']} lbs x {lift['reps']} x {lift['sets']}{note}")
 
 def delete_lift(log, index):
     i = index - 1
@@ -57,7 +58,7 @@ def prompt_int(msg):
 def main():
     log = load_log()
     while True:
-        print("\n1) Add lift  2) Show log  3) Delete  4) Today  5) PR  6) Quit")
+        print("\n1) Add Lift  2) View  3) Delete  4) Today  5) Complete  6) Quit")
         choice = input("Choose: ").strip()
         
         if choice == "1":
@@ -79,13 +80,38 @@ def main():
             list_lifts_for(log, day)
             stats_for(log, day)
         elif choice == "5":
-            name = input("Exercise name for PR: ")
-            pr_by_exercise(log, name)
+            mark_complete(log)
         elif choice == "6":
             print("Saved. Bye!")
             break
         else:
             print("Invalid choice.")
+
+def mark_complete(log):
+    if not log:
+        print("No lifts yet.")
+        return
+
+    # show items with checkboxes
+    for i, item in enumerate(log, start=1):
+        box = "x" if item.get("completed") else " "
+        name = item.get('title') or item.get('exercise') or f"item {i}"
+        print(f"{i}. [{box}] {name}")
+
+    pick = input("Toggle which number? (Enter to cancel) ").strip()
+    if not pick:
+        return
+    try:
+        idx = int(pick) - 1
+        if 0 <= idx < len(log):
+            log[idx]["completed"] = not log[idx].get("completed", False)
+            save_log(log)
+            print("Updated.")
+        else:
+            print("Out of range.")
+    except ValueError:
+        print("Bad input.")
+
 
 
 from datetime import date
@@ -100,7 +126,9 @@ def list_lifts_for(log, day):
         return
     for i, lift in enumerate(items, 1):
         note = f" | {lift['note']}" if lift.get("note") else ""
-        print(f"{i}. [{lift['date']}] {lift['exercise']} — {lift['weight']} lbs x {lift['reps']} x {lift['sets']}{note}")
+        box = "x" if lift.get("completed") else " "
+        print(f"{i}. [{box}] {lift['date']} {lift['exercise']} – {lift['weight']} lbs x {lift['reps']} x {lift['sets']}{note}")
+
 
 def stats_for(log, day):
     items = [l for l in log if l.get("date") == day]
